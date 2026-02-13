@@ -10,8 +10,9 @@
 - [Перечень требований по модели FURPS+](Task2/FURPS+.md)
 
 ## Задание 3
-
+- [Открытие депозитов онлайн](Task3/ADR-deposit-opening-mvp.md)
 
 ## Задание 4
+- [Передача ставок в кол-центр](Task4/ADR-actual-rates-sending-mvp.md)
 
 # Задание 5
