@@ -14,5 +14,7 @@
 
 ## Задание 4
 - [Передача ставок в кол-центр](Task4/ADR-actual-rates-sending-mvp.md)
+- [Список задач](Task4/task-list.png)
+- [Road Map](Task4/road-map.png)
 
 # Задание 5
