@@ -18,3 +18,5 @@
 - [Road Map](Task4/road-map.png)
 
 # Задание 5
+- [Заявка на кредит онлайн](Task5/ADR-loan-application-online.md)
+
