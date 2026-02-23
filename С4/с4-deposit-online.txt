@@ -1,0 +1,199 @@
+workspace "Банк \"Стандарт\"" "Открытие депозитов онлайн" {
+
+    !identifiers hierarchical
+
+    model {
+        client = person "Клиент" {
+            tags ExtPerson
+        }
+
+        extTO = softwareSystem "Телеком-оператор" {
+            tags ExtSystem
+        }
+        
+        group "Банк \"Стандарт\"" {
+            depositeDepartmentManager = person "Менеджер депозитного отдела"
+            creditDepartmentManager = person "Менеджер кредитного отдела"
+            frontOfficeManager = person "Менеджер отделения банка"
+            callCenterManager = person "Менеджер кол-центра"
+    
+            sABS = softwareSystem "АБС" {
+                da = container "Десктопное приложение" "Delphi" {
+                    tags "DesctopApplication"    
+                }
+                
+                db = container "Данные о клиентах, счетах, платежах и т.д." "СУБД Oracle"{
+                    tags "Database"
+                }
+                
+                da -> db 
+            }
+    
+            sIB = softwareSystem "Интернет-Банк" {
+                wa = container "Веб приложение" "ASP.NET MVC 4.5, .NET Framework 4.5" {
+                    tags "WebApplication"
+                }
+                
+                db = container "Данные о клиентах, счетах, платежах." "СУБД MS SQL" {
+                    tags "Database"
+                }
+
+                wa -> db   
+                
+                msPRED = container "Микросервис: Специальные ставки по депозитам" "Java Spring Boot, PostgreSQL" {
+                    tags "Microservice"
+                }
+                
+                dbMsPRED = container "Специальные ставки по депозитам" "СУБД PostgeSQL" {
+                    tags "Database"
+                }
+
+                msPRED -> dbMsPRED 
+
+                msSMS = container "Микросервис: СМС-коды для подтвреждения" "Java Spring Boot" {
+                    tags "Microservice"
+                }
+                
+                wa -> msPRED "Список клиентов, запрос предоодобренных предложений"
+                wa -> msSMS "Генерация, отправление и проверка СМС-кодов подтверждения"
+            }
+    
+            sS = softwareSystem "Сайт" "PHP, React.js" 
+            sCCS = softwareSystem "Система кол-центра" "React.js, Java Spring Boot, PostgreSQL" 
+            sSMSG = softwareSystem "СМС-шлюз телеком-оператора"
+            sCD = softwareSystem "Актуальные справочники" "Java Spring Boot, PostgreSQL"
+        }
+
+        # client 
+        client -> sS "Информация по депозитам, Заявки на открытие депозита" "HTTPS"
+        client -> sIB.wa "Информация по депозитам, Заявки на открытие депозита" "HTTPS"
+        client -> sCCS "Подтверждение заявки на открытие депозита, созданной через сайт" 
+
+        # callCenterManager
+        callCenterManager -> sCCS "Обработка заявок на открытие депозита, созданных через сайт"
+        
+        # depositeDepartmentManager
+        depositeDepartmentManager -> sABS.da "Расчет предварительных персональных ставок для клиентов и категорий клиентов, Обработка заяваок на открытие депозита"
+        
+        # creditDepartmentManager
+        creditDepartmentManager -> sABS.da "Актуальные ставки по депозитам"
+
+        # frontOfficeManager
+        frontOfficeManager -> sABS.da "Обработка заявок на открытие депозита, созданных через сайт"
+        
+        # internal
+        sABS.da -> sSMSG "Оповещения (Открытые депозиты, решения по заявкам на открытие депозита)"
+        sIB.wa -> sABS.db "Заявки на открытие депозита"
+        sIB.msSMS -> sSMSG "СМС-коды для подтверждения операций"
+        sIB.wa -> sCD "Запрос актуальных предложений по депозитам"
+        sIB.msPRED -> sABS.db "Специальные ставки"
+        sCCS -> sABS.db "Заявки на открытие депозита, созданные через сайт"
+        sS -> sCCS "Заявки на открытие депозита"
+        sS -> sCD "Запрос актуальных предложений по депозитам"
+        sCD -> sABS "Запрос актуальных предложений по депозитам"
+        
+        # external
+        sSMSG -> extTO "CMC-уведомления и коды подтверждения операций"
+        extTO -> client "CMC-уведомления и коды подтверждения операций"
+    }
+
+    views {
+        systemLandscape Landscape "Ландшафт" {
+            include * 
+            autolayout tb
+        }
+        
+        systemContext sABS "ABS" "АБС" {
+            include *  client callCenterManager
+            autolayout tb
+        }
+
+        container sABS "ABSContainers"  "АБС: диаграмма контейнеров" {
+            include *
+            autolayout tb
+        }
+
+        systemContext sIB "InternetBanking" "Интернет-банк" {
+            include *
+            autolayout tb
+        }
+
+        container sIB "InternetBankingContainers"  "Интернет-банк: диаграмма контейнеров" {
+            include *
+            autolayout tb
+        }
+
+        systemContext sS "Site" "Сайт" {
+            include *
+            autolayout tb
+        }
+
+        container sS "SiteContainers"  "Сайт: диаграмма контейнеров" {
+            include *
+            autolayout tb
+        }
+
+        styles {
+            element "Element" {
+                color #ffffff
+                stroke #ffffff
+                background #0773af
+                strokeWidth 5
+                shape roundedbox
+            }
+
+            element "Software System" {
+                #color #0773af
+                stroke #0773af
+            }
+
+            element "Person" {
+                shape person
+                background #0773af
+                stroke #0773af
+            }
+
+            element "ExtPerson" {
+                shape person
+                background #01497c
+                stroke #01497c
+            }
+
+            element "ExtSystem" {
+                background #aaaaaa
+                stroke #aaaaaa
+            }
+
+            element "Database" {
+                shape cylinder
+            }
+
+            element "WebApplication" {
+                shape WebBrowser
+            }
+
+            element "DesctopApplication" {
+                shape Window
+            }
+            
+            element "Microservice" {
+                shape Hexagon
+            }
+            
+            element "Group" {
+                strokeWidth 5
+            }
+            
+            relationship "Relationship" {
+                # routing Orthogonal
+                thickness 4
+            }
+        }
+    }
+
+
+    configuration {
+        scope softwaresystem
+    }
+
+}

@@ -1,0 +1,197 @@
+workspace "Банк \"Стандарт\"" " Заявка на кредит онлайн" {
+
+    !identifiers hierarchical
+
+    model {
+        client = person "Клиент" {
+            tags ExtPerson
+        }
+
+        extCSB = softwareSystem "Бюро кредитных историй" {
+            tags ExtSystem
+        }
+
+        extTO = softwareSystem "Телеком-оператор" {
+            tags ExtSystem
+        }
+        
+        group "Банк \"Стандарт\"" {
+            creditDepartmentManager = person "Менеджер кредитного отдела"
+            frontOfficeManager = person "Менеджер отделения банка"
+
+            sABS = softwareSystem "АБС" {
+                da = container "Десктопное приложение" "Delphi" {
+                    tags "DesctopApplication"    
+                }
+                
+                db = container "Данные о клиентах, счетах, платежах и т.д." "СУБД Oracle"{
+                    tags "Database"
+                }
+                
+                da -> db 
+            }
+    
+            sIB = softwareSystem "Интернет-Банк" {
+                wa = container "Веб приложение" "ASP.NET MVC 4.5, .NET Framework 4.5" {
+                    tags "WebApplication"
+                }
+                
+                db = container "Данные о клиентах, счетах, платежах." "СУБД MS SQL" {
+                    tags "Database"
+                }
+
+                wa -> db   
+                
+                msPREC = container "Микросервис: Предоодобренные предложения по кредитам" "Java Spring Boot, PostgreSQL" {
+                    tags "Microservice"
+                }
+                
+                dbMsPREC = container "Предоодобренные предложения по кредитам" "СУБД PostgeSQL" {
+                    tags "Database"
+                }
+
+                msPREC -> dbMsPREC 
+
+                msSMS = container "Микросервис: СМС-коды для подтвреждения" "Java Spring Boot" {
+                    tags "Microservice"
+                }
+                
+                wa -> msPREC "Список клиентов, запрос предоодобренных предложений"
+                wa -> msSMS "Генерация, отправление и проверка СМС-кодов подтверждения"
+            }
+    
+            sS = softwareSystem "Сайт" "PHP, React.js" 
+            sCP = softwareSystem "Кредитный конвейер"
+            sCS = softwareSystem "Кредитный скоринг" 
+            sSMSG = softwareSystem "СМС-шлюз телеком-оператора"
+            sCD = softwareSystem "Актуальные справочники" "Java Spring Boot, PostgreSQL"
+        }
+
+        # client 
+        client -> sS "Информация по предложениям о кредитах. Заявки на получение кредита." "HTTPS"
+        client -> sIB.wa "Информация по предложениям о кредитах. Заявки на получение кредита." "HTTPS"
+
+        # creditDepartmentManager
+        creditDepartmentManager -> sCP "Формирование предварительных предложений по кредитам, Обработка заявок на получение кредита, рассчет актуальных ставок по кредитам"
+        
+        # frontOfficeManager
+        frontOfficeManager -> sABS.da "Создание заявок на получение кредита"
+        frontOfficeManager -> sCP "Создание заявок на получение кредита по предодобренному предложению"
+        
+        # internal
+        sABS.db -> sSMSG "Оповещения (Выданные кредиты, решения по заявкам на получение кредита, изменения статусов заявок)"
+        sABS.db -> sCS "Данные о клиентах, платежах"
+        sABS.db -> sCP "Заявки на получение кредита"
+        # sIB.wa -> sABS.db "Создание заявки на получение кредита"
+        # sIB.wa -> sCS "Запрос на одобрение кредита по паспортным данным"
+        sIB.wa -> sCP "Создание заявок на получение кредита"
+        sIB.msSMS -> sSMSG "СМС-коды для подтверждения операций"
+        sIB.wa -> sCD "Запрос актуальных предложений по кредитам."
+        sIB.msPREC -> sCS "Запрос на расчет предодобренных предложений для клиентов по кредитам (по расписанию в нерабочее время)"
+        sCP -> sCS "Запросы на скоринг клиента, Передача номеров платежей по кредитному договору"
+        sS -> sCD "Запрос актуальных предложений по кредитам"
+        sS -> sCS "Запрос решения об (не)одобрении кредита"
+        sS -> sSMSG "СМС-сообщение об (не)одобрении кредита"
+        sCD -> sCP "Запрос актуальных предложений по кредитам"
+        
+        # external
+        sCS -> extCSB "Запросы кредитных историй"
+        sSMSG -> extTO "CMC-уведомления и коды подтверждения операций"
+        extTO -> client "CMC-уведомления и коды подтверждения операций"
+    }
+
+    views {
+        systemLandscape Landscape "Ландшафт" {
+            include * 
+            autolayout tb
+        }
+        
+        systemContext sABS "ABS" "АБС" {
+            include * frontOfficeManager 
+            autolayout tb
+        }
+
+        container sABS "ABSContainers"  "АБС: диаграмма контейнеров" {
+            include * frontOfficeManager
+            autolayout tb
+        }
+
+        systemContext sIB "InternetBanking" "Интернет-банк" {
+            include * extCSB
+            autolayout tb
+        }
+
+        container sIB "InternetBankingContainers"  "Интернет-банк: диаграмма контейнеров" {
+            include * extCSB sCP
+            autolayout tb
+        }
+
+        systemContext sS "Site" "Сайт" {
+            include *
+            autolayout tb
+        }
+
+        styles {
+            element "Element" {
+                color #ffffff
+                stroke #ffffff
+                background #0773af
+                strokeWidth 5
+                shape roundedbox
+            }
+
+            element "Software System" {
+                #color #0773af
+                stroke #0773af
+            }
+
+            element "Person" {
+                shape person
+                background #0773af
+                stroke #0773af
+            }
+
+            element "ExtPerson" {
+                shape person
+                background #01497c
+                stroke #01497c
+            }
+
+            element "ExtSystem" {
+                background #aaaaaa
+                stroke #aaaaaa
+            }
+
+            element "Database" {
+                shape cylinder
+            }
+
+            element "WebApplication" {
+                shape WebBrowser
+            }
+
+            element "DesctopApplication" {
+                shape Window
+            }
+            
+            element "Microservice" {
+                shape Hexagon
+            }
+            
+            element "Group" {
+                strokeWidth 5
+            }
+            
+            relationship "Relationship" {
+                # routing Orthogonal
+                thickness 4
+            }
+        }
+    }
+
+
+    configuration {
+        scope softwaresystem
+    }
+
+}

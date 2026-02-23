@@ -1,0 +1,141 @@
+workspace "Банк \"Стандарт\"" "Передача ставок по депозитам в кол-центр" {
+
+    !identifiers hierarchical
+
+    model {
+        outerCallCenterManager = person "Менеджер внешнего кол-центра" {
+            tags ExtPerson
+        }
+
+        group "Банк \"Стандарт\"" {
+            callCenterManager = person "Менеджер кол-центра"
+    
+            sABS = softwareSystem "АБС" 
+    
+            sS = softwareSystem "Сайт" {
+                wa = container "Веб приложение" "PHP, React.js" {
+                    tags "WebApplication"
+                }
+            }
+            
+            sCCS = softwareSystem "Система кол-центра" {
+                fa = container "Веб приложение" "React.js" {
+                    tags "WebApplication"
+                }
+
+                ba = container "Бэкенд" "Java Spring Boot" 
+
+                
+                db = container "Данные системы кол-центра" {
+                    tags "Database"
+                }
+
+                fa -> ba
+                ba -> db   
+            }
+            
+            sCD = softwareSystem "Актуальные справочники"
+        }
+
+        # callCenterManager
+        callCenterManager -> sCCS.fa "Запрос текущих ставок по депозитам"
+
+        # outerCallCenterManager
+        outerCallCenterManager -> sS.wa "Скачивание файла с текущими ставками по депозитам"
+        
+        # internal
+        sS.wa -> sCD "Запрос текущих ставок по депозитам"
+        sCCS.ba -> sCD "Запрос текущих ставок по депозитам"
+        sCD -> sABS "Запрос текущих ставок по депозитам"
+    }
+
+    views {
+        systemLandscape Landscape "Ландшафт" {
+            include * 
+            autolayout tb
+        }
+
+        systemContext sS "Site" "Сайт" {
+            include * outerCallCenterManager
+            autolayout tb
+        }
+        
+        systemContext sCCS "CallCenterSysterm" "Система кол-центра" {
+            include *
+            autolayout tb
+        }
+
+        container sS "SiteContainer"  "Сайт" {
+            include * outerCallCenterManager
+            autolayout tb
+        }
+
+        container sCCS "CallCenterContainer" "Система кол-центра" {
+            include *
+            autolayout tb
+        }
+
+        styles {
+            element "Element" {
+                color #ffffff
+                stroke #ffffff
+                background #0773af
+                strokeWidth 5
+                shape roundedbox
+            }
+
+            element "Software System" {
+                #color #0773af
+                stroke #0773af
+            }
+
+            element "Person" {
+                shape person
+                background #0773af
+                stroke #0773af
+            }
+
+            element "ExtPerson" {
+                shape person
+                background #01497c
+                stroke #01497c
+            }
+
+            element "ExtSystem" {
+                background #aaaaaa
+                stroke #aaaaaa
+            }
+
+            element "Database" {
+                shape cylinder
+            }
+
+            element "WebApplication" {
+                shape WebBrowser
+            }
+
+            element "DesctopApplication" {
+                shape Window
+            }
+            
+            element "Microservice" {
+                shape Hexagon
+            }
+            
+            element "Group" {
+                strokeWidth 5
+            }
+            
+            relationship "Relationship" {
+                # routing Orthogonal
+                thickness 4
+            }
+        }
+    }
+
+
+    configuration {
+        scope softwaresystem
+    }
+
+}
